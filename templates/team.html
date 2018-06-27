@@ -1,0 +1,144 @@
+{% extends "base.html" %} {% block title %} Index {% endblock %} {% block navbar %}
+<style>
+    checkbox {
+        width: 1000px;
+        height: 1000px;
+    }
+    .fileinput-button {
+        position: relative;
+        display: inline-block;
+        overflow: hidden;
+    }
+
+    .fileinput-button input{
+        position: absolute;
+        left: 0px;
+        top: 0px;
+        opacity: 0;
+        -ms-filter: 'alpha(opacity=0)';
+    }
+</style>
+<div class="sidebar-collapse">
+    <ul class="nav metismenu" id="side-menu">
+        <li class="nav-header">
+            <div class="dropdown profile-element">
+                <a data-toggle="dropdown" class="dropdown-toggle" href="#">
+                    <span class="clear"> <span class="block m-t-xs"> <strong class="font-bold">管理员</strong>
+                     </span> <span class="text-muted text-xs block">Art Director <b class="caret"></b></span> </span>
+                </a>
+                <ul class="dropdown-menu animated fadeInRight m-t-xs">
+                    <li><a href={{url_for( 'logout') }}>注销</a></li>
+                </ul>
+            </div>
+            <div class="logo-element">
+
+            </div>
+        </li>
+
+        <li class="active">
+            <a href={{url_for( 'team') }}><i class="fa fa-bar-chart-o"></i> <span class="nav-label">团队版本统计</span> </a>
+        </li>
+        <li>
+            <a href={{url_for( 'project') }}><i class="fa fa-bar-chart-o"></i> <span class="nav-label">项目版本交付</span> </a>
+        </li>
+    </ul>
+</div>
+{%- endblock navbar %} {% block content %}
+<div class="ibox-content">
+    <div class="text-center m-t-lg">
+        <h1>
+            团队版本统计
+        </h1>
+    </div>
+
+    <hr>
+
+    <label class="control-label">选择要上传的文件</label>
+
+    <form action="" method=post enctype=multipart/form-data>
+        <!--
+        <span class="btn btn-success fileinput-button">
+            <span>团队数据文件选择</span>-->
+            <input type=file id="file" name=file class="file" onchange="printFileInfo()" multiple="multiple">
+        <!--</span>-->
+        <input type=submit value="点我上传" class="btn btn-primary">
+{#        <div id="filesid">#}
+{##}
+{#        </div>#}
+    </form>
+
+{#    <input type="file" id="file" name="file" class="file" onchange="printFileInfo()" multiple="multiple"/>#}
+{#    <hr>#}
+{#    <input type="button" value="上传文件" onclick="uploadFile()" /><br />#}
+    <div id="filesid">
+
+    </div>
+
+    <hr>
+    <label class="control-label">选择统计日期</label>
+    <form action="start_team_statistics" method=post enctype=multipart/form-data>
+        <label class="control-label">起始日期：</label>
+        <input name="starttime" type="date"/><br>
+        <label class="control-label">截止日期：</label>
+        <input name="endtime" type="date"/><br>
+        <input type=submit value="点我统计" class="btn btn-primary"/>
+    </form>
+    <hr>
+{#    <form action="/data/downloads/team.xlsx" method=get enctype=multipart/form-data>#}
+{#        <input type=submit value="下载" class="btn btn-primary">#}
+{#    </form>#}
+    <a href="{{ url_for('static', filename=download_file_name)}}" target="_blank" class="btn btn-primary">点我下载</a>
+    <!--
+    <a href="{{ url_for('start_team_statistics')}}" target="_blank" class="btn btn-primary">统计</a>
+    <hr>
+    <a href="{{ url_for('static', filename='xxx')}}" target="_blank" class="btn btn-primary">下载</a>
+    -->
+</div>
+<script>
+    function printFileInfo(){
+
+        var picFile = document.getElementById("file");
+        var files = picFile.files;
+        var filesbox = document.getElementById("filesid");
+        filesbox.innerHTML = "";
+        for(var i=0; i<files.length; i++){
+            var file = files[i];
+
+            var div = document.createElement("div");
+            {#div.innerHTML = "第("+ (i+1) +") 个文件的名字："+ file.name +#}
+            {#" , 文件类型："+ file.type +" , 文件大小:"+ file.size;#}
+            div.innerHTML = (i+1) + ":" + file.name;
+            filesbox.appendChild(div);
+        }
+    }
+    var xhr = new XMLHttpRequest();
+    function uploadFile() {
+        //将上传的多个文件放入formData中
+        var picFileList = $("#file").get(0).files;
+        var formData = new FormData();
+        for (var i = 0; i < picFileList.length; i++) {
+            console.log("file:", picFileList[i]);
+            {#formData.append("file", picFileList[i]);#}
+            formData.append("file", picFileList[i]);
+
+        }
+
+        //监听事件
+        //xhr.upload.addEventListener("progress", onprogress, false);
+        //xhr.addEventListener("error", uploadFailed, false);//发送文件和表单自定义参数
+        {#xhr.open("POST", "/");#}
+        //记得加入上传数据formData
+        {#xhr.send(formData);#}
+
+        xhr.open("POST", "/team");
+        xhr.send(formData);
+        console.log("picFileList.length:", picFileList.length);
+        console.log("formData:", formData);
+    }
+
+    function start_statistics() {
+        xhr.open("Post", "/start_team_statistics");
+        xhr.send();
+    }
+</script>
+{% endblock %}

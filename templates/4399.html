@@ -1,0 +1,66 @@
+{% extends "base.html"  %}
+{% block title %} 4399 {% endblock %}
+{% block navbar %}
+<style>
+checkbox{
+width:1000px;
+
+height:1000px;
+
+}
+</style>
+<div class="sidebar-collapse">
+    <ul class="nav metismenu" id="side-menu">
+        <li class="nav-header">
+            <div class="dropdown profile-element">
+                    <a data-toggle="dropdown" class="dropdown-toggle" href="#">
+                    <span class="clear"> <span class="block m-t-xs"> <strong class="font-bold">管理员</strong>
+                     </span> <span class="text-muted text-xs block">Art Director <b class="caret"></b></span> </span> </a>
+                    <ul class="dropdown-menu animated fadeInRight m-t-xs">
+                        <li><a href="#">Logout</a></li>
+                    </ul>
+            </div>
+            <div class="logo-element">
+
+            </div>
+        </li>
+        <li class="active">
+            <a href={{url_for('index') }}><i class="fa fa-th-large"></i> <span class="nav-label">联运发版本</span></a>
+        </li>
+        <li>
+            <a href={{url_for('index_4399') }}><i class="fa fa-th-large"></i> <span class="nav-label">4399发版本</span> </a>
+        </li>
+    </ul>
+</div>
+{%- endblock navbar %}
+{% block content  %}
+<div class="ibox-content">
+    <div class="text-center m-t-lg">       
+        <h1>
+            4399发版本工具
+        </h1>
+    </div>
+
+    <hr>
+
+    <form method="POST" class="form-horizontal">
+    
+        <div class="form-group"><label class="col-sm-2 control-label">请选择发送内容</label>
+            <div class="col-sm-10">
+            {% for field in form %}
+                {% if field.type == "BooleanField" %}
+                <label class="checkbox-inline i-checks">{{ field() }} {{ field.label }}</label>
+                {% endif %}
+            {% endfor %}
+            </div>
+        </div>
+        <div class="hr-line-dashed"></div>
+        <div class="form-group">
+            <div class="col-sm-2 col-sm-offset-2">
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </div>
+    
+    </form>
+</div>
+{% endblock %}
