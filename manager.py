@@ -61,7 +61,8 @@ login_manager.login_view = 'login'
 db = SQLAlchemy()
 db.init_app(app)
 
-download_filename = ''
+team_download_filename = ''
+project_download_filename = ''
 
 
 def get_excel_value(cell, ctype):
@@ -72,6 +73,12 @@ def get_excel_value(cell, ctype):
         cell = date.strftime('%Y-%m-%d')
     elif ctype == 4:
         cell = True if cell == 1 else False
+    elif type(cell) == str or type(cell) == unicode:
+        mat = re.match(r"(\d{4}/\d{1,2}/\d{1,2})", cell)
+        if mat:
+            celldate = datetime.strptime(cell, "%Y/%m/%d")
+            cell = celldate.strftime('%Y-%m-%d')
+
     return cell
 
 
@@ -218,6 +225,65 @@ def import_one_team(file_name, start_time, end_time):
     ret = [filebasename, timed_delivery_num, planed_delivery_num,
            test_delivery_num, temp_delivery_num,
            test_num, formal_delivery_rate, test_pass_rate]
+    return ret
+
+
+def import_one_project(file_name, start_time, end_time):
+    data = xlrd.open_workbook(file_name)
+    # sheet0 = data.sheets()[0]
+    sheet1 = data.sheets()[1]
+    # project_map = project_map_table.find_one()
+    # sheet0_nrows = sheet0.nrows
+    # sheet0_ncols = sheet0.ncols
+    sheet1_nrows = sheet1.nrows
+    sheet1_ncols = sheet1.ncols
+    received_request_num = 0
+    delivery_request_num = 0
+    traceback_request_num = 0
+
+    request_status_col = get_col(sheet1, sheet1_nrows, sheet1_ncols, u"需求状态")
+    put_forward_time_col = get_col(sheet1, sheet1_nrows, sheet1_ncols, u"提出时间")
+
+    year_start_time = start_time[:4] + '-01-01'
+    year_end_time = start_time[:4] + '-12-31'
+    for i in range(1, sheet1_nrows):
+        # print table.row_values(i)
+        ctype = sheet1.cell(i, request_status_col).ctype
+        cell = sheet1.cell_value(i, request_status_col)
+        request_status = get_excel_value(cell, ctype)
+
+        ctype = sheet1.cell(i, put_forward_time_col).ctype
+        cell = sheet1.cell_value(i, put_forward_time_col)
+        put_forward_time = get_excel_value(cell, ctype)
+
+        # 截止到当前的全年汇总数据(按照提出时间）
+        if year_start_time <= put_forward_time <= year_end_time:
+            received_request_num += 1
+
+        # 如2018年4~6月交付需求数（正式发布+待现场部署+待现场验证+部署完成+已交付+已解决）
+        if start_time <= put_forward_time <= end_time:
+            if request_status == u"正式发布" \
+                    or request_status == u"待现场部署" \
+                    or request_status == u"待现场验证" \
+                    or request_status == u"部署完成" \
+                    or request_status == u"已交付" \
+                    or request_status == u"已解决":
+                delivery_request_num += 1
+
+        # 截止到当前的全年汇总数据（未启动 + 澄清中 + 开发中 + 测试中）
+        if year_start_time <= put_forward_time <= year_end_time:
+            if request_status == u"未启动" \
+                    or request_status == u"澄清中" \
+                    or request_status == u"开发中" \
+                    or request_status == u"测试中":
+                traceback_request_num += 1
+
+    print "received_request_num:", received_request_num
+    print "delivery_request_num:", delivery_request_num
+    print "traceback_request_num:", traceback_request_num
+    filebasename = os.path.basename(file_name)
+    ret = [filebasename, received_request_num, delivery_request_num, traceback_request_num]
+
     return ret
 
 
@@ -381,9 +447,9 @@ def team():
         print "filenames:",filenames
         flash(u"上传完成")
         return redirect(url_for('team'))
-    global download_filename
-    download_filename = u"downloads/" + download_filename
-    return render_template('team.html', download_file_name=download_filename)
+    global team_download_filename
+    team_download_filename = u"downloads/" + team_download_filename
+    return render_template('team.html', download_file_name=team_download_filename)
 
 
 @app.route('/start_team_statistics', methods=['GET', 'POST'])
@@ -415,11 +481,11 @@ def start_team_statistics():
         ws.cell(row=ws.max_row, column=ws.max_column).number_format = numbers.FORMAT_PERCENTAGE_00
     if not os.path.exists(DOWNLOAD_FOLDER):
         os.mkdir(DOWNLOAD_FOLDER)
-    global download_filename
+    global team_download_filename
     now_time = datetime.now().strftime('%Y-%m-%d %H%M%S')
     str_now_time = str(now_time)
-    download_filename = u"项目及团队情况统计原始数据表" + start_time + "_" + end_time + "_" + str_now_time + ".xlsx"
-    wb.save(DOWNLOAD_FOLDER + "/" + download_filename)
+    team_download_filename = u"团队版本交付统计" + start_time + "_" + end_time + "_" + str_now_time + ".xlsx"
+    wb.save(DOWNLOAD_FOLDER + "/" + team_download_filename)
     flash(u"统计完成，请下载。")
 
     return redirect(url_for('team'))
@@ -430,7 +496,15 @@ def project():
     if request.method == 'POST':
         print "request.files:", request.files
         files = request.files.getlist("file")
+        # request.
         filenames = []
+        upload_file_path = UPLOAD_FOLDER + "/project"
+        if os.path.exists(upload_file_path):
+            for team_file in os.listdir(upload_file_path):
+                os.remove(os.path.join(upload_file_path, team_file))
+        else:
+            os.makedirs(upload_file_path)
+
         for file in files:
             print "file:", file
             print "file.filename", file.filename
@@ -440,9 +514,6 @@ def project():
                 filename = file.filename
                 now_time = datetime.now().strftime('%Y-%m-%d')
                 str_now_time = str(now_time)
-                upload_file_path = UPLOAD_FOLDER + "/project"
-                if not os.path.exists(upload_file_path):
-                    os.makedirs(upload_file_path)
                 # int(time.time())
                 file.save(os.path.join(upload_file_path, filename))
                 # import_file_name  = upload_file_path + '/' + filename
@@ -451,39 +522,44 @@ def project():
         print "filenames:",filenames
         flash(u"上传完成")
         return redirect(url_for('project'))
-
-    return render_template('project.html')
+    global project_download_filename
+    project_download_filename = u"downloads/" + project_download_filename
+    return render_template('project.html', download_file_name=project_download_filename)
 
 
 @app.route('/start_project_statistics', methods=['GET', 'POST'])
 def start_project_statistics():
-    # if request.method == 'POST':
-    #     print "request.files:", request.files
-    #     files = request.files.getlist("file")
-    #     filenames = []
-    #     for file in files:
-    #         print "file:", file
-    #         print "file.filename", file.filename
-    #         filenames.append(file.filename)
-    #         if file and allowed_file(file.filename):
-    #             # filename = secure_filename(file.filename)
-    #             filename = file.filename
-    #             now_time = datetime.now().strftime('%Y-%m-%d')
-    #             str_now_time = str(now_time)
-    #             upload_file_path = UPLOAD_FOLDER + "/project"
-    #             if not os.path.exists(upload_file_path):
-    #                 os.makedirs(upload_file_path)
-    #             # int(time.time())
-    #             file.save(os.path.join(upload_file_path, filename))
-    #             # import_file_name  = upload_file_path + '/' + filename
-    #             # import_one(import_file_name)
-    #             # return redirect(url_for('uploaded_file', filename=filename))
-    #     print "filenames:",filenames
-    #     flash(u"上传完成")
-    #     return redirect(url_for('project'))
+    start_time = request.values['starttime']
+    end_time = request.values['endtime']
+    print "start time: ", start_time
+    print "end time:", end_time
+    if not start_time or not end_time:
+        flash(u"日期为空，请填写正确日期。")
+        return redirect(url_for('project'))
 
-    return render_template('project.html')
+    project_dir = UPLOAD_FOLDER + "/project"
+    project_list = []
+    for project_file in os.listdir(project_dir):
+        print project_file
+        project_list.append(import_one_project(UPLOAD_FOLDER + "/project/" + project_file, start_time, end_time))
+        print project_list
+    wb = Workbook()
+    ws = wb.active
+    ws.title = u"需求交付"
+    title = [u"项目", u"收到需求总数", u"交付需求总数", u"待跟进需求数"]
+    ws.append(title)
+    for row in project_list:
+        ws.append(row)
+    if not os.path.exists(DOWNLOAD_FOLDER):
+        os.mkdir(DOWNLOAD_FOLDER)
+    global project_download_filename
+    now_time = datetime.now().strftime('%Y-%m-%d %H%M%S')
+    str_now_time = str(now_time)
+    project_download_filename = u"项目情况统计" + start_time + "_" + end_time + "_" + str_now_time + ".xlsx"
+    wb.save(DOWNLOAD_FOLDER + "/" + project_download_filename)
+    flash(u"统计完成，请下载。")
 
+    return redirect(url_for('project'))
 
 
 @app.route('/login',  methods=['GET', "POST"])

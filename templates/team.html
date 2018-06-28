@@ -39,7 +39,7 @@
             <a href={{url_for( 'team') }}><i class="fa fa-bar-chart-o"></i> <span class="nav-label">团队版本统计</span> </a>
         </li>
         <li>
-            <a href={{url_for( 'project') }}><i class="fa fa-bar-chart-o"></i> <span class="nav-label">项目版本交付</span> </a>
+            <a href={{url_for( 'project') }}><i class="fa fa-bar-chart-o"></i> <span class="nav-label">项目情况统计</span> </a>
         </li>
     </ul>
 </div>
@@ -87,7 +87,7 @@
 {#    <form action="/data/downloads/team.xlsx" method=get enctype=multipart/form-data>#}
 {#        <input type=submit value="下载" class="btn btn-primary">#}
 {#    </form>#}
-    <a href="{{ url_for('static', filename=download_file_name)}}" target="_blank" class="btn btn-primary">点我下载</a>
+    <a href="{{ url_for('static', filename=download_file_name)}}" target="_blank" class="btn btn-primary">团队版本交付统计下载</a>
     <!--
     <a href="{{ url_for('start_team_statistics')}}" target="_blank" class="btn btn-primary">统计</a>
     <hr>

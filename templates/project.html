@@ -49,7 +49,7 @@
             <a href={{url_for( 'team') }}><i class="fa fa-bar-chart-o"></i> <span class="nav-label">团队版本统计</span> </a>
         </li>
         <li class="active">
-            <a href={{url_for( 'project') }}><i class="fa fa-bar-chart-o"></i> <span class="nav-label">项目版本交付</span> </a>
+            <a href={{url_for( 'project') }}><i class="fa fa-bar-chart-o"></i> <span class="nav-label">项目情况统计</span> </a>
         </li>
     </ul>
 </div>
@@ -57,7 +57,7 @@
 <div class="ibox-content">
     <div class="text-center m-t-lg">
         <h1>
-            项目版本交付
+            项目情况统计
         </h1>
     </div>
 
@@ -65,29 +65,29 @@
 
     <label class="control-label">选择要上传的文件</label>
 
-    <form action="" method=post enctype=multipart/form-data onsubmit="uploadFile()">
+    <form action="" method=post enctype=multipart/form-data>
         <!--
         <span class="btn btn-success fileinput-button">
             <span>团队数据文件选择</span>-->
             <input type=file id="file" name=file class="file" onchange="printFileInfo()" multiple="multiple">
         <!--</span>-->
-        <input type=submit value=上传 class="btn btn-primary">
-{#        <div id="filesid">#}
-{##}
-{#        </div>#}
+        <input type=submit value="点我上传" class="btn btn-primary">
     </form>
-
-{#    <input type="file" id="file" name="file" class="file" onchange="printFileInfo()" multiple="multiple"/>#}
-{#    <hr>#}
-{#    <input type="button" value="上传文件" onclick="uploadFile()" /><br />#}
     <div id="filesid">
 
     </div>
 
     <hr>
-    <a href="{{ url_for('start_project_statistics')}}" target="_blank" class="btn btn-primary">统计</a>
+    <label class="control-label">选择统计日期</label>
+    <form action="start_project_statistics" method=post enctype=multipart/form-data>
+        <label class="control-label">起始日期：</label>
+        <input name="starttime" type="date"/><br>
+        <label class="control-label">截止日期：</label>
+        <input name="endtime" type="date"/><br>
+        <input type=submit value="点我统计" class="btn btn-primary"/>
+    </form>
     <hr>
-    <a href="{{ url_for('static', filename='xxx')}}" target="_blank" class="btn btn-primary">下载</a>
+    <a href="{{ url_for('static', filename=download_file_name)}}" target="_blank" class="btn btn-primary">项目情况统计下载</a>
 <script>
     function printFileInfo(){
 
@@ -104,30 +104,6 @@
             div.innerHTML = (i+1) + ":" + file.name;
             filesbox.appendChild(div);
         }
-    }
-    var xhr = new XMLHttpRequest();
-    function uploadFile() {
-        //将上传的多个文件放入formData中
-        var picFileList = $("#file").get(0).files;
-        var formData = new FormData();
-        for (var i = 0; i < picFileList.length; i++) {
-            console.log("file:", picFileList[i]);
-            {#formData.append("file", picFileList[i]);#}
-            formData.append("file", picFileList[i]);
-
-        }
-
-        //监听事件
-        //xhr.upload.addEventListener("progress", onprogress, false);
-        //xhr.addEventListener("error", uploadFailed, false);//发送文件和表单自定义参数
-        {#xhr.open("POST", "/");#}
-        //记得加入上传数据formData
-        {#xhr.send(formData);#}
-
-        xhr.open("POST", "/project");
-        xhr.send(formData);
-        console.log("picFileList.length:", picFileList.length);
-        console.log("formData:", formData);
     }
 </script>
 {% endblock %}
