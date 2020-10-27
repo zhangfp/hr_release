@@ -7,7 +7,7 @@ cffi==1.9.1
 click==6.7
 configparser==3.5.0
 crypto==1.4.1
-cryptography==1.6
+cryptography==3.2
 dominate==2.1.12
 ecdsa==0.13
 elasticsearch==5.0.1
